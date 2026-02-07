@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tadasana AI Trainer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.13.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.0.0"></script>
+    <style>
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .video-container { position: relative; }
+        canvas { position: absolute; top: 0; left: 0; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-7xl w-full bg-white rounded-2xl shadow-2xl p-8">
+        <h1 class="text-4xl font-bold text-center mb-2 text-gray-800">🧘 Tadasana AI Trainer</h1>
+        <p class="text-center text-gray-600 mb-8">Real-time Mountain Pose Analysis & Feedback</p>
+        
+        <div class="grid md:grid-cols-2 gap-8">
+            <!-- Reference Image -->
+            <div class="space-y-4">
+                <h2 class="text-2xl font-semibold text-gray-700">📸 Reference Pose</h2>
+                <div class="bg-gray-100 rounded-lg p-4">
+                    <img id="referenceImage" src="tadasana-reference.jpg" alt="Tadasana Reference" 
+                         class="w-full rounded-lg shadow-md" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22600%22%3E%3Crect fill=%22%23e5e7eb%22 width=%22400%22 height=%22600%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 fill=%22%239ca3af%22 font-size=%2224%22%3ETadasana Reference%3C/text%3E%3C/svg%3E'">
+                </div>
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <h3 class="font-semibold text-blue-900 mb-2">Key Points:</h3>
+                    <ul class="text-sm text-blue-800 space-y-1">
+                        <li>✓ Feet hip-width apart</li>
+                        <li>✓ Weight evenly distributed</li>
+                        <li>✓ Knees straight but not locked</li>
+                        <li>✓ Shoulders over hips</li>
+                        <li>✓ Arms relaxed by sides</li>
+                        <li>✓ Head aligned over shoulders</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Live Camera Feed -->
+            <div class="space-y-4">
+                <h2 class="text-2xl font-semibold text-gray-700">📹 Your Pose</h2>
+                <div class="video-container bg-black rounded-lg overflow-hidden">
+                    <video id="video" width="640" height="480" autoplay class="w-full"></video>
+                    <canvas id="canvas" width="640" height="480"></canvas>
+                </div>
+                <button id="startBtn" class="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:from-purple-700 hover:to-blue-700 transition">
+                    Start Camera
+                </button>
+            </div>
+        </div>
+
+        <!-- Feedback Section -->
+        <div class="mt-8 grid md:grid-cols-3 gap-4">
+            <div class="bg-gradient-to-br from-green-400 to-green-600 p-6 rounded-lg text-white">
+                <h3 class="text-lg font-semibold mb-2">Accuracy Score</h3>
+                <p id="score" class="text-5xl font-bold">0%</p>
+            </div>
+            <div class="bg-gradient-to-br from-yellow-400 to-orange-500 p-6 rounded-lg text-white">
+                <h3 class="text-lg font-semibold mb-2">Status</h3>
+                <p id="status" class="text-2xl font-bold">Not Started</p>
+            </div>
+            <div class="bg-gradient-to-br from-blue-400 to-indigo-600 p-6 rounded-lg text-white">
+                <h3 class="text-lg font-semibold mb-2">Pose Time</h3>
+                <p id="timer" class="text-5xl font-bold">0s</p>
+            </div>
+        </div>
+
+        <!-- Real-time Corrections -->
+        <div class="mt-6 bg-gray-50 p-6 rounded-lg">
+            <h3 class="text-xl font-semibold text-gray-800 mb-4">🎯 Real-time Corrections</h3>
+            <div id="corrections" class="space-y-2 text-gray-700">
+                <p class="text-gray-500 italic">Stand in frame to receive feedback...</p>
+            </div>
+        </div>
+
+        <!-- Training History -->
+        <div class="mt-6 bg-gray-50 p-6 rounded-lg">
+            <h3 class="text-xl font-semibold text-gray-800 mb-4">📊 Training Session</h3>
+            <div id="history" class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div><span class="text-gray-600">Best Score:</span> <span id="bestScore" class="font-bold text-green-600">0%</span></div>
+                <div><span class="text-gray-600">Attempts:</span> <span id="attempts" class="font-bold text-blue-600">0</span></div>
+                <div><span class="text-gray-600">Avg Score:</span> <span id="avgScore" class="font-bold text-purple-600">0%</span></div>
+                <div><span class="text-gray-600">Total Time:</span> <span id="totalTime" class="font-bold text-orange-600">0s</span></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
