@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>SUNDAY - Tadasana AR Correction</title>
+    <title>SUNDAY - Yoga AR Correction</title>
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#2563eb">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -10,10 +10,8 @@
     <link rel="icon" type="image/png" href="/assets/logo.png">
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.13.0/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.0.0/dist/pose-detection.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        // Custom Tailwind Configuration for SUNDAY theme
         tailwind.config = {
             theme: {
                 extend: {
@@ -21,10 +19,10 @@
                         'primary': '#42A5F5',
                         'secondary': '#1976D2', 
                         'accent': '#FFEB3B',
-                        'background': '#121212',
+                        'background': '#0c0e12',
                         'card': '#1E1E1E',
                         'warning': '#FFC107',
-                        'success': '#10B981'
+                        'success': '#10B981',
                     },
                     fontFamily: {
                         sans: ['Inter', 'sans-serif'],
@@ -34,221 +32,203 @@
         }
     </script>
     <style>
-        /* SUNDAY Platform Styles */
         body {
             background-color: #0c0e12;
             background-image:
                 radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.1) 0, transparent 50%),
                 radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.1) 0, transparent 50%);
             color: #E0E0E0;
-            font-family: 'Inter', sans-serif;
             min-height: 100vh;
             overflow-x: hidden;
         }
 
-        .view-fade-in {
-            animation: viewFadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        .premium-blur {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        @keyframes viewFadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .scrollable-content {
-            overflow-y: auto;
-            max-height: calc(100vh - 350px);
-            scrollbar-width: none;
-        }
-        .scrollable-content::-webkit-scrollbar { display: none; }
-
-        /* 3D Card Hover Effect */
-        .card-effect {
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
-        }
-        .card-effect:hover {
-            transform: translateY(-8px) scale(1.02);
-            border-color: rgba(66, 165, 245, 0.4);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(66, 165, 245, 0.2);
-            background: rgba(30, 41, 59, 0.6) !important;
-        }
-
-        /* AR/Video Feed Styles */
         #video-container {
             position: relative;
             width: 100%;
             padding-top: 75%; /* 4:3 Aspect Ratio */
             background-color: #000;
-            border-radius: 1rem;
+            border-radius: 1.5rem;
             overflow: hidden;
-            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
 
-        #video-feed {
+        #video-feed, #ar-canvas {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transform: scaleX(-1); /* Mirror the video feed */
+            transform: scaleX(-1);
         }
 
-        #ar-canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            transform: scaleX(-1); /* Mirror the canvas */
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
-        /* Mobile Responsiveness */
-        @media screen and (max-width: 768px) {
-            body { font-size: 14px; }
-            #app { padding: 12px !important; }
-            header { 
-                flex-direction: column !important;
-                gap: 16px !important;
-                padding-bottom: 16px !important;
-                margin-bottom: 16px !important;
-            }
-            header h1 { font-size: 2rem !important; }
-            header .text-left p { font-size: 9px !important; }
-            main#content {
-                padding: 16px !important;
-                border-radius: 20px !important;
-                min-height: 50vh !important;
-            }
-            .grid.md\\:grid-cols-2 { grid-template-columns: 1fr !important; }
+        /* Pulse and Animations */
+        @keyframes pulse-primary {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.05); }
+        }
+        .anim-pulse { animation: pulse-primary 2s infinite; }
+
+        .view-fade-in {
+            animation: fadeIn 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        @media screen and (max-width: 400px) {
-            header h1 { font-size: 1.5rem !important; }
-            header .w-12 { width: 40px !important; height: 40px !important; }
+        .scrollable-no-bar {
+            scrollbar-width: none;
+        }
+        .scrollable-no-bar::-webkit-scrollbar {
+            display: none;
         }
     </style>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 </head>
-<body class="gradient-bg min-h-screen flex flex-col items-center pb-20 md:pb-8 text-gray-200">
-    <div id="app" class="w-full max-w-4xl p-4 md:p-8">
-        <!-- SUNDAY Header -->
-        <header class="flex flex-col md:flex-row items-center justify-between mb-8 pb-6 border-b border-gray-800 gap-6">
+<body class="flex flex-col items-center justify-start p-4 md:p-8">
+
+    <div id="app" class="w-full max-w-5xl view-fade-in">
+        <!-- Header -->
+        <header class="flex items-center justify-between mb-8 w-full">
             <div class="flex items-center space-x-4">
-                <div class="w-12 h-12 bg-primary/20 rounded-2xl flex items-center justify-center overflow-hidden p-1.5 shadow-lg shadow-primary/10 border border-primary/20">
-                    <img src="/assets/logo.png" alt="SUNDAY Logo" class="w-full h-full object-contain" onerror="this.innerHTML='🧘'">
+                <div class="w-12 h-12 bg-primary/20 rounded-2xl flex items-center justify-center p-2 border border-primary/20 shadow-lg shadow-primary/10">
+                    <img src="/assets/logo.png" alt="SUNDAY" class="w-full h-full object-contain" onerror="this.src='https://raw.githubusercontent.com/google/material-design-icons/master/png/action/accessibility/materialicons/48dp/1x/baseline_accessibility_white_48dp.png'">
                 </div>
-                <div class="text-left">
-                    <h1 class="text-4xl md:text-5xl font-black text-primary tracking-tighter uppercase italic">SUNDAY</h1>
-                    <p class="text-gray-500 font-medium text-[10px] md:text-xs uppercase tracking-[0.2em]">Tadasana AR Correction</p>
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-black text-primary tracking-tighter uppercase italic">SUNDAY</h1>
+                    <p class="text-gray-500 font-bold text-[10px] uppercase tracking-widest">Advanced AR Correction</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+                <div id="connection-status" class="status-badge bg-success/20 text-success border border-success/20">
+                    System Ready
                 </div>
             </div>
         </header>
 
-        <!-- Main Content -->
-        <main id="content" class="bg-card shadow-2xl rounded-3xl p-6 md:p-8 min-h-[60vh] shadow-gray-900">
-            <div class="view-fade-in">
-                <h2 class="text-3xl font-extrabold text-white mb-6 border-b pb-3 border-gray-700 font-display">AR Correction</h2>
-                
-                <!-- Tadasana AR Correction Content -->
-                <div class="space-y-6">
-                    <div class="p-4 bg-accent/20 border-l-4 border-accent rounded-xl shadow-sm">
-                        <p class="text-gray-100 font-medium">📷 **Before starting:** Ensure you have enough space and your full body is visible in the frame for best results.</p>
+        <!-- Main AR Engine View -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+            
+            <!-- Video & Canvas Column -->
+            <div class="lg:col-span-8 space-y-6">
+                <div id="video-container" class="border border-white/5">
+                    <video id="video-feed" autoplay playsinline></video>
+                    <canvas id="ar-canvas"></canvas>
+                    
+                    <!-- Loading Overlay -->
+                    <div id="camera-overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-background/90 z-10 transition-opacity duration-500">
+                        <div class="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-4"></div>
+                        <p id="overlay-text" class="text-gray-400 font-medium">Initializing Vision Engine...</p>
+                        <button id="start-btn" class="mt-6 px-10 py-4 bg-primary text-background font-black rounded-2xl shadow-xl shadow-primary/20 active:scale-95 transition-all hidden uppercase tracking-widest">
+                            Start Assessment
+                        </button>
                     </div>
+                </div>
 
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-4">
-                        <!-- Video Container -->
-                        <div id="video-container" style="display: block;" class="relative">
-                            <video id="video-feed" autoplay playsinline class="rounded-xl"></video>
-                            <canvas id="ar-canvas"></canvas>
-                            <div id="camera-status" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-900/90 text-gray-400 rounded-xl">
-                                <div class="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mb-3"></div>
-                                <p id="status-text">Click Start to begin</p>
-                                <p id="error-message" class="text-red-500 mt-2 text-sm hidden"></p>
-                            </div>
-                        </div>
-
-                        <!-- Reference Container -->
-                        <div id="reference-container" style="display: block;" class="bg-card rounded-xl border border-gray-700 shadow-md p-4">
-                            <h3 class="text-sm font-bold text-primary mb-2">Reference Guide</h3>
-                            <!-- Reference Image -->
-                            <div id="reference-media-container" class="bg-gray-900 rounded-xl overflow-hidden mb-2" style="max-height: 250px; min-height: 100px;">
-                                <img id="reference-image" class="w-full object-contain rounded-xl" style="max-height: 250px;" alt="Reference Pose" src="tadasana-reference.jpg" onerror="this.style.display='none'; document.getElementById('reference-placeholder').style.display='flex'">
-                                <div id="reference-placeholder" class="flex items-center justify-center p-3" style="min-height: 100px; display: none;">
-                                    <div class="text-center">
-                                        <span id="reference-emoji" class="text-4xl">🧘</span>
-                                        <p id="reference-pose-name" class="text-gray-400 mt-2 text-xs font-medium">Tadasana (Mountain Pose)</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="text-xs text-gray-500 space-y-1">
-                                <p><strong class="text-gray-400">Target:</strong> <span id="reference-targeted">Spine, Core, Legs</span></p>
-                                <p><strong class="text-gray-400">Benefits:</strong> <span id="reference-benefits">Improves posture, strengthens thighs, knees, and ankles</span></p>
-                                <p><strong class="text-gray-400">Precaution:</strong> <span id="reference-precaution">Avoid if you have low blood pressure or dizziness</span></p>
-                            </div>
-                        </div>
+                <!-- Live Metrics Bar -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="premium-blur p-4 rounded-2xl">
+                        <p class="text-[10px] text-gray-500 font-black uppercase mb-1">Stability</p>
+                        <p id="metric-stability" class="text-xl font-bold text-white">--</p>
                     </div>
-
-                    <!-- Start Button -->
-                    <button id="start-ar-btn" onclick="startARAssessment()" class="w-full py-4 bg-primary hover:bg-primary/80 text-background font-black rounded-2xl transition-all shadow-lg shadow-primary/20 active:scale-95 flex items-center justify-center space-x-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
-                            <path d="M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z" />
-                            <path fill-rule="evenodd" d="M1.5 12c0-2.485 2.404-4.5 5.488-4.5h11.024c3.084 0 5.488 2.015 5.488 4.5s-2.404 4.5-5.488 4.5H6.988c-3.084 0-5.488-2.015-5.488-4.5ZM7.5 12a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0Z" clip-rule="evenodd" />
-                        </svg>
-                        <span>START TADASANA PRACTICE</span>
-                    </button>
-
-                    <!-- Feedback Area -->
-                    <div id="feedback-area" style="display: none;" class="mt-4 p-4 bg-card rounded-xl border border-gray-700 shadow-md space-y-3">
-                        <!-- Score Display -->
-                        <div class="grid grid-cols-3 gap-4 mb-4">
-                            <div class="bg-gradient-to-br from-green-500 to-green-600 p-4 rounded-xl text-white text-center">
-                                <h3 class="text-xs font-semibold mb-1 opacity-90">Accuracy</h3>
-                                <p id="pose-score" class="text-3xl font-black">0%</p>
-                                <div id="score-bar" class="bg-green-400 h-2 rounded-full mt-2 transition-all duration-500" style="width: 0%"></div>
-                            </div>
-                            <div class="bg-gradient-to-br from-accent to-orange-500 p-4 rounded-xl text-gray-900 text-center">
-                                <h3 class="text-xs font-semibold mb-1 opacity-90">Status</h3>
-                                <p id="pose-status" class="text-lg font-black">Analyzing</p>
-                            </div>
-                            <div class="bg-gradient-to-br from-primary to-indigo-600 p-4 rounded-xl text-white text-center">
-                                <h3 class="text-xs font-semibold mb-1 opacity-90">Timer</h3>
-                                <p id="pose-timer" class="text-3xl font-black">0s</p>
-                            </div>
-                        </div>
-
-                        <!-- Real-time Feedback -->
-                        <div>
-                            <p class="text-sm font-bold text-primary mb-1">Real-Time Feedback:</p>
-                            <p id="current-feedback-text" class="text-lg text-gray-400 font-medium transition-colors">Stand in frame to begin analysis.</p>
-                        </div>
-
-                        <!-- Correction Log -->
-                        <div class="border-t border-gray-700 pt-3">
-                            <div id="correction-log" class="space-y-2 max-h-40 overflow-y-auto scrollable-content">
-                                <p class="text-xs text-gray-500 font-semibold mb-2">Correction Log & Suggestions:</p>
-                            </div>
-                        </div>
-
-                        <!-- Control Buttons -->
-                        <div class="flex items-center justify-between gap-3">
-                            <button id="tts-toggle-btn" onclick="toggleTTS()" class="flex items-center space-x-2 px-4 py-2 bg-gray-700 rounded-xl hover:bg-gray-600 transition text-sm font-medium">
-                                <svg id="tts-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-gray-400">
-                                    <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.318.664-2.66 1.905A9.76 9.76 0 0 0 1.5 12c0 .898.121 1.768.35 2.595.341 1.24 1.518 1.905 2.659 1.905h1.93l4.5 4.5c.945.945 2.561.276 2.561-1.06V4.06ZM18.584 5.106a.75.75 0 0 1 1.06 0c3.808 3.807 3.808 9.98 0 13.788a.75.75 0 0 1-1.06-1.06 8.25 8.25 0 0 0 0-11.668.75.75 0 0 1 0-1.06Z" />
-                                    <path d="M15.932 7.757a.75.75 0 0 1 1.061 0 6 6 0 0 1 0 8.486.75.75 0 0 1-1.06-1.061 4.5 4.5 0 0 0 0-6.364.75.75 0 0 1 0-1.06Z" />
-                                </svg>
-                                <span id="tts-status-text">Voice Guide Off</span>
-                            </button>
-                            <button onclick="stopARAssessment()" class="flex-grow py-2 px-4 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition">
-                                Stop AR Tracking
-                            </button>
-                        </div>
+                    <div class="premium-blur p-4 rounded-2xl">
+                        <p class="text-[10px] text-gray-500 font-black uppercase mb-1">Symmetry</p>
+                        <p id="metric-symmetry" class="text-xl font-bold text-white">--</p>
+                    </div>
+                    <div class="premium-blur p-4 rounded-2xl">
+                        <p class="text-[10px] text-gray-500 font-black uppercase mb-1">Hold Time</p>
+                        <p id="metric-timer" class="text-xl font-bold text-primary">0s</p>
+                    </div>
+                    <div class="premium-blur p-4 rounded-2xl">
+                        <p class="text-[10px] text-gray-500 font-black uppercase mb-1">Best Accuracy</p>
+                        <p id="metric-best" class="text-xl font-bold text-success">0%</p>
                     </div>
                 </div>
             </div>
-        </main>
+
+            <!-- Feedback & Instructions Column -->
+            <div class="lg:col-span-4 space-y-6">
+                
+                <!-- Accuracy Gauge -->
+                <div class="premium-blur p-6 rounded-3xl relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-10">
+                        <svg class="w-20 h-20 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
+                    </div>
+                    <h3 class="text-xs font-black text-gray-500 uppercase tracking-widest mb-4">Live Accuracy</h3>
+                    <div class="flex items-end space-x-2 mb-2">
+                        <span id="accuracy-value" class="text-6xl font-black text-white leading-none">0</span>
+                        <span class="text-2xl font-bold text-gray-600 mb-1">%</span>
+                    </div>
+                    <div class="w-full bg-white/5 h-3 rounded-full overflow-hidden">
+                        <div id="accuracy-bar" class="h-full bg-gradient-to-r from-red-500 via-yellow-500 to-success transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <p id="accuracy-status" class="mt-4 text-sm font-bold text-gray-400 uppercase tracking-tighter">Stand in frame</p>
+                </div>
+
+                <!-- Dynamic Suggestions -->
+                <div class="premium-blur p-6 rounded-3xl flex-grow flex flex-col min-h-[300px]">
+                    <h3 class="text-xs font-black text-primary uppercase tracking-widest mb-4 flex items-center">
+                        <span class="w-6 h-px bg-primary/30 mr-2"></span> Real-time Correction
+                    </h3>
+                    
+                    <div id="suggestion-box" class="flex-grow space-y-4">
+                        <div id="main-suggestion" class="text-xl font-bold text-white leading-tight">
+                            Analyzing your posture...
+                        </div>
+                        <div id="correction-list" class="space-y-2 max-h-[150px] overflow-y-auto scrollable-no-bar">
+                            <!-- Dynamic items -->
+                        </div>
+                    </div>
+
+                    <div class="mt-6 pt-6 border-t border-white/10 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-gray-500 uppercase">Voice Guide</span>
+                            <button id="tts-toggle" class="w-12 h-6 bg-white/5 rounded-full relative transition-colors duration-300">
+                                <span class="absolute left-1 top-1 w-4 h-4 bg-gray-600 rounded-full transition-all duration-300"></span>
+                            </button>
+                        </div>
+                        <button id="stop-btn" class="w-full py-4 bg-red-500/10 hover:bg-red-500/20 text-red-500 font-bold rounded-2xl border border-red-500/20 transition-all uppercase text-sm tracking-widest">
+                            Stop Session
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Pose Reference (Small) -->
+                <div class="premium-blur p-5 rounded-3xl border border-primary/10">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-xl">⛰️</div>
+                        <div>
+                            <h4 class="text-sm font-bold text-white">Tadasana</h4>
+                            <p class="text-[10px] text-gray-500 font-bold uppercase">Mountain Pose</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="mt-12 text-center text-gray-600 text-[10px] font-bold uppercase tracking-[0.3em] pb-8">
+            SUNDAY vision-engine v2.0 • posture-ai
+        </footer>
     </div>
 
     <script src="app.js"></script>
