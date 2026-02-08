@@ -10,3 +10,6 @@ ENV/
 training_data.json
 .DS_Store
 *.log
+.pythonlibs/
+.upm/
+.cache/
