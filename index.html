@@ -1,15 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <title>SUNDAY - Yoga AR Correction</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SUNDAY - VR Yoga Pose Correction</title>
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#2563eb">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="/assets/logo.png">
-    <link rel="icon" type="image/png" href="/assets/logo.png">
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.13.0/dist/tf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.0.0/dist/pose-detection.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -17,15 +16,12 @@
                 extend: {
                     colors: {
                         'primary': '#42A5F5',
-                        'secondary': '#1976D2', 
+                        'secondary': '#1976D2',
                         'accent': '#FFEB3B',
-                        'background': '#0c0e12',
+                        'background': '#121212',
                         'card': '#1E1E1E',
                         'warning': '#FFC107',
                         'success': '#10B981',
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
                     }
                 }
             }
@@ -37,200 +33,460 @@
             background-image:
                 radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.1) 0, transparent 50%),
                 radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.1) 0, transparent 50%);
-            color: #E0E0E0;
+            font-family: 'Inter', sans-serif;
             min-height: 100vh;
-            overflow-x: hidden;
         }
 
-        .premium-blur {
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            background: rgba(30, 41, 59, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        .pose-card {
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
         }
 
-        #video-container {
-            position: relative;
-            width: 100%;
-            padding-top: 75%; /* 4:3 Aspect Ratio */
-            background-color: #000;
-            border-radius: 1.5rem;
-            overflow: hidden;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        .pose-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            border-color: rgba(66, 165, 245, 0.4);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(66, 165, 245, 0.2);
+            background: rgba(30, 41, 59, 0.6) !important;
         }
 
-        #video-feed, #ar-canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transform: scaleX(-1);
-        }
-
-        .status-badge {
+        .badge {
             padding: 4px 12px;
-            border-radius: 9999px;
+            border-radius: 12px;
             font-size: 0.75rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+            font-weight: 600;
         }
 
-        /* Pulse and Animations */
-        @keyframes pulse-primary {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.7; transform: scale(1.05); }
+        .badge-completed {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10B981;
         }
-        .anim-pulse { animation: pulse-primary 2s infinite; }
 
-        .view-fade-in {
-            animation: fadeIn 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        .badge-new {
+            background: rgba(66, 165, 245, 0.2);
+            color: #42A5F5;
         }
+
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
-        .scrollable-no-bar {
-            scrollbar-width: none;
+        .fade-in {
+            animation: fadeIn 0.6s ease-out forwards;
         }
-        .scrollable-no-bar::-webkit-scrollbar {
-            display: none;
+
+        @media (max-width: 640px) {
+            .pose-card {
+                min-height: 280px;
+            }
+        }
+
+        @media (min-width: 641px) and (max-width: 1024px) {
+            .pose-card {
+                min-height: 320px;
+            }
+        }
+
+        @media (min-width: 1025px) {
+            .pose-card {
+                min-height: 360px;
+            }
         }
     </style>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 </head>
-<body class="flex flex-col items-center justify-start p-4 md:p-8">
 
-    <div id="app" class="w-full max-w-5xl view-fade-in">
-        <!-- Header -->
-        <header class="flex items-center justify-between mb-8 w-full">
-            <div class="flex items-center space-x-4">
-                <div class="w-12 h-12 bg-primary/20 rounded-2xl flex items-center justify-center p-2 border border-primary/20 shadow-lg shadow-primary/10">
-                    <img src="/assets/logo.png" alt="SUNDAY" class="w-full h-full object-contain" onerror="this.src='https://raw.githubusercontent.com/google/material-design-icons/master/png/action/accessibility/materialicons/48dp/1x/baseline_accessibility_white_48dp.png'">
-                </div>
-                <div>
-                    <h1 class="text-3xl md:text-4xl font-black text-primary tracking-tighter uppercase italic">SUNDAY</h1>
-                    <p class="text-gray-500 font-bold text-[10px] uppercase tracking-widest">Advanced AR Correction</p>
-                </div>
-            </div>
-            
-            <div class="flex items-center space-x-3">
-                <div id="connection-status" class="status-badge bg-success/20 text-success border border-success/20">
-                    System Ready
-                </div>
-            </div>
-        </header>
-
-        <!-- Main AR Engine View -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
-            
-            <!-- Video & Canvas Column -->
-            <div class="lg:col-span-8 space-y-6">
-                <div id="video-container" class="border border-white/5">
-                    <video id="video-feed" autoplay playsinline></video>
-                    <canvas id="ar-canvas"></canvas>
-                    
-                    <!-- Loading Overlay -->
-                    <div id="camera-overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-background/90 z-10 transition-opacity duration-500">
-                        <div class="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-4"></div>
-                        <p id="overlay-text" class="text-gray-400 font-medium">Initializing Vision Engine...</p>
-                        <button id="start-btn" class="mt-6 px-10 py-4 bg-primary text-background font-black rounded-2xl shadow-xl shadow-primary/20 active:scale-95 transition-all hidden uppercase tracking-widest">
-                            Start Assessment
-                        </button>
+<body class="text-gray-100">
+    <!-- Header -->
+    <header class="sticky top-0 z-50 bg-gray-900/80 backdrop-blur-lg border-b border-gray-800">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+                            class="w-6 h-6 text-white">
+                            <path
+                                d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z M3 12a9 9 0 1 1 18 0 9 9 0 0 1-18 0Z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-xl md:text-2xl font-bold text-white">SUNDAY</h1>
+                        <p class="text-xs md:text-sm text-gray-400">VR Yoga Pose Correction</p>
                     </div>
                 </div>
-
-                <!-- Live Metrics Bar -->
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div class="premium-blur p-4 rounded-2xl">
-                        <p class="text-[10px] text-gray-500 font-black uppercase mb-1">Stability</p>
-                        <p id="metric-stability" class="text-xl font-bold text-white">--</p>
-                    </div>
-                    <div class="premium-blur p-4 rounded-2xl">
-                        <p class="text-[10px] text-gray-500 font-black uppercase mb-1">Symmetry</p>
-                        <p id="metric-symmetry" class="text-xl font-bold text-white">--</p>
-                    </div>
-                    <div class="premium-blur p-4 rounded-2xl">
-                        <p class="text-[10px] text-gray-500 font-black uppercase mb-1">Hold Time</p>
-                        <p id="metric-timer" class="text-xl font-bold text-primary">0s</p>
-                    </div>
-                    <div class="premium-blur p-4 rounded-2xl">
-                        <p class="text-[10px] text-gray-500 font-black uppercase mb-1">Best Accuracy</p>
-                        <p id="metric-best" class="text-xl font-bold text-success">0%</p>
+                <div class="flex items-center space-x-2 md:space-x-4">
+                    <span class="hidden md:inline text-sm text-gray-400">Practice makes perfect</span>
+                    <div class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+                            class="w-5 h-5 text-gray-400">
+                            <path fill-rule="evenodd"
+                                d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z"
+                                clip-rule="evenodd" />
+                        </svg>
                     </div>
                 </div>
-            </div>
-
-            <!-- Feedback & Instructions Column -->
-            <div class="lg:col-span-4 space-y-6">
-                
-                <!-- Accuracy Gauge -->
-                <div class="premium-blur p-6 rounded-3xl relative overflow-hidden">
-                    <div class="absolute top-0 right-0 p-4 opacity-10">
-                        <svg class="w-20 h-20 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
-                    </div>
-                    <h3 class="text-xs font-black text-gray-500 uppercase tracking-widest mb-4">Live Accuracy</h3>
-                    <div class="flex items-end space-x-2 mb-2">
-                        <span id="accuracy-value" class="text-6xl font-black text-white leading-none">0</span>
-                        <span class="text-2xl font-bold text-gray-600 mb-1">%</span>
-                    </div>
-                    <div class="w-full bg-white/5 h-3 rounded-full overflow-hidden">
-                        <div id="accuracy-bar" class="h-full bg-gradient-to-r from-red-500 via-yellow-500 to-success transition-all duration-500" style="width: 0%"></div>
-                    </div>
-                    <p id="accuracy-status" class="mt-4 text-sm font-bold text-gray-400 uppercase tracking-tighter">Stand in frame</p>
-                </div>
-
-                <!-- Dynamic Suggestions -->
-                <div class="premium-blur p-6 rounded-3xl flex-grow flex flex-col min-h-[300px]">
-                    <h3 class="text-xs font-black text-primary uppercase tracking-widest mb-4 flex items-center">
-                        <span class="w-6 h-px bg-primary/30 mr-2"></span> Real-time Correction
-                    </h3>
-                    
-                    <div id="suggestion-box" class="flex-grow space-y-4">
-                        <div id="main-suggestion" class="text-xl font-bold text-white leading-tight">
-                            Analyzing your posture...
-                        </div>
-                        <div id="correction-list" class="space-y-2 max-h-[150px] overflow-y-auto scrollable-no-bar">
-                            <!-- Dynamic items -->
-                        </div>
-                    </div>
-
-                    <div class="mt-6 pt-6 border-t border-white/10 space-y-4">
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs font-bold text-gray-500 uppercase">Voice Guide</span>
-                            <button id="tts-toggle" class="w-12 h-6 bg-white/5 rounded-full relative transition-colors duration-300">
-                                <span class="absolute left-1 top-1 w-4 h-4 bg-gray-600 rounded-full transition-all duration-300"></span>
-                            </button>
-                        </div>
-                        <button id="stop-btn" class="w-full py-4 bg-red-500/10 hover:bg-red-500/20 text-red-500 font-bold rounded-2xl border border-red-500/20 transition-all uppercase text-sm tracking-widest">
-                            Stop Session
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Pose Reference (Small) -->
-                <div class="premium-blur p-5 rounded-3xl border border-primary/10">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-xl">⛰️</div>
-                        <div>
-                            <h4 class="text-sm font-bold text-white">Tadasana</h4>
-                            <p class="text-[10px] text-gray-500 font-bold uppercase">Mountain Pose</p>
-                        </div>
-                    </div>
-                </div>
-
             </div>
         </div>
+    </header>
 
-        <!-- Footer -->
-        <footer class="mt-12 text-center text-gray-600 text-[10px] font-bold uppercase tracking-[0.3em] pb-8">
-            SUNDAY vision-engine v2.0 • posture-ai
-        </footer>
-    </div>
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8 md:py-12">
+        <!-- Hero Section -->
+        <section class="text-center mb-12 md:mb-16 fade-in">
+            <h2 class="text-3xl md:text-5xl font-bold mb-4 text-white">Master Your Yoga Practice</h2>
+            <p class="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto">
+                Real-time AI-powered pose correction for 7 essential yoga asanas. Get instant feedback and perfect your
+                form.
+            </p>
+        </section>
 
-    <script src="app.js"></script>
+        <!-- Stats Section -->
+        <section class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12 fade-in" style="animation-delay: 0.1s;">
+            <div class="bg-gray-800/50 backdrop-blur rounded-2xl p-4 md:p-6 border border-gray-700 text-center">
+                <div class="text-2xl md:text-3xl font-bold text-primary mb-1">7</div>
+                <div class="text-xs md:text-sm text-gray-400">Yoga Poses</div>
+            </div>
+            <div class="bg-gray-800/50 backdrop-blur rounded-2xl p-4 md:p-6 border border-gray-700 text-center">
+                <div class="text-2xl md:text-3xl font-bold text-success mb-1">30</div>
+                <div class="text-xs md:text-sm text-gray-400">FPS Tracking</div>
+            </div>
+            <div class="bg-gray-800/50 backdrop-blur rounded-2xl p-4 md:p-6 border border-gray-700 text-center">
+                <div class="text-2xl md:text-3xl font-bold text-accent mb-1">AI</div>
+                <div class="text-xs md:text-sm text-gray-400">Powered</div>
+            </div>
+            <div class="bg-gray-800/50 backdrop-blur rounded-2xl p-4 md:p-6 border border-gray-700 text-center">
+                <div class="text-2xl md:text-3xl font-bold text-warning mb-1">100%</div>
+                <div class="text-xs md:text-sm text-gray-400">Accuracy Goal</div>
+            </div>
+        </section>
+
+        <!-- Poses Grid -->
+        <section class="mb-12">
+            <h3 class="text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-white">Choose Your Practice</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+                <!-- Tadasana -->
+                <div class="pose-card bg-gray-800/40 backdrop-blur rounded-2xl p-6 fade-in"
+                    style="animation-delay: 0.2s;">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="badge badge-completed">✓ Trained</span>
+                        <div class="text-4xl">🧘</div>
+                    </div>
+                    <h4 class="text-xl font-bold text-white mb-2">Tadasana</h4>
+                    <p class="text-sm text-gray-400 mb-4">Mountain Pose - Foundation of all standing poses</p>
+                    <div class="space-y-2 mb-6">
+                        <div class="flex items-center text-xs text-gray-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                class="w-4 h-4 mr-2 text-primary">
+                                <path fill-rule="evenodd"
+                                    d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                            20-point biomechanical analysis
+                        </div>
+                        <div class="flex items-center text-xs text-gray-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                class="w-4 h-4 mr-2 text-primary">
+                                <path fill-rule="evenodd"
+                                    d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                            Real-time corrections
+                        </div>
+                    </div>
+                    <a href="tadasana.html"
+                        class="block w-full bg-primary hover:bg-primary/80 text-white text-center py-3 rounded-xl font-semibold transition-all">
+                        Start Practice
+                    </a>
+                </div>
+
+                <!-- Vrikshasana -->
+                <div class="pose-card bg-gray-800/40 backdrop-blur rounded-2xl p-6 fade-in"
+                    style="animation-delay: 0.3s;">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="badge badge-new">New</span>
+                        <div class="text-4xl">🌳</div>
+                    </div>
+                    <h4 class="text-xl font-bold text-white mb-2">Vrikshasana</h4>
+                    <p class="text-sm text-gray-400 mb-4">Tree Pose - Balance and stability</p>
+                    <div class="space-y-2 mb-6">
+                        <div class="flex items-center text-xs text-gray-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                class="w-4 h-4 mr-2 text-primary">
+                                <path fill-rule="evenodd"
+                                    d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                            Balance assessment
+                        </div>
+                        <div class="flex items-center text-xs text-gray-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                class="w-4 h-4 mr-2 text-primary">
+                                <path fill-rule="evenodd"
+                                    d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                            Hip alignment tracking
+                        </div>
+                    </div>
+                    <a href="vrikshasana.html"
+                        class="block w-full bg-primary hover:bg-primary/80 text-white text-center py-3 rounded-xl font-semibold transition-all">
+                        Start Practice
+                    </a>
+                </div>
+
+                <!-- Trikonasana -->
+                <div class="pose-card bg-gray-800/40 backdrop-blur rounded-2xl p-6 fade-in"
+                    style="animation-delay: 0.4s;">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="badge badge-new">New</span>
+                        <div class="text-4xl">📐</div>
+                    </div>
+                    <h4 class="text-xl font-bold text-white mb-2">Trikonasana</h4>
+                    <p class="text-sm text-gray-400 mb-4">Triangle Pose - Strength and flexibility</p>
+                    <div class="space-y-2 mb-6">
+                        <div class="flex items-center text-xs text-gray-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                class="w-4 h-4 mr-2 text-primary">
+                                <path fill-rule="evenodd"
+                                    d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                            Leg extension analysis
+                        </div>
+                        <div class="flex items-center text-xs text-gray-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                class="w-4 h-4 mr-2 text-primary">
+                                <path fill-rule="evenodd"
+                                    d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                            Spine alignment check
+                        </div>
+                    </div>
+                    <a href="trikonasana.html"
+                        class="block w-full bg-primary hover:bg-primary/80 text-white text-center py-3 rounded-xl font-semibold transition-all">
+                        Start Practice
+                    </a>
+                </div>
+
+                <!-- Virabhadrasana I -->
+                <div class="pose-card bg-gray-800/40 backdrop-blur rounded-2xl p-6 fade-in"
+                    style="animation-delay: 0.5s;">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="badge badge-new">New</span>
+                        <div class="text-4xl">⚔️</div>
+                    </div>
+                    <h4 class="text-xl font-bold text-white mb-2">Virabhadrasana I</h4>
+                    <p class="text-sm text-gray-400 mb-4">Warrior I - Power and determination</p>
+                    <div class="space-y-2 mb-6">
+                        <div class="flex items-center text-xs text-gray-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                class="w-4 h-4 mr-2 text-primary">
+                                <path fill-rule="evenodd"
+                                    d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                            Knee angle validation
+                        </div>
+                        <div class="flex items-center text-xs text-gray-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                class="w-4 h-4 mr-2 text-primary">
+                                <path fill-rule="evenodd"
+                                    d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                            Arm extension tracking
+                        </div>
+                    </div>
+                    <a href="warrior1.html"
+                        class="block w-full bg-primary hover:bg-primary/80 text-white text-center py-3 rounded-xl font-semibold transition-all">
+                        Start Practice
+                    </a>
+                </div>
+
+                <!-- Virabhadrasana II -->
+                <div class="pose-card bg-gray-800/40 backdrop-blur rounded-2xl p-6 fade-in"
+                    style="animation-delay: 0.6s;">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="badge badge-new">New</span>
+                        <div class="text-4xl">🗡️</div>
+                    </div>
+                    <h4 class="text-xl font-bold text-white mb-2">Virabhadrasana II</h4>
+                    <p class="text-sm text-gray-400 mb-4">Warrior II - Endurance and focus</p>
+                    <div class="space-y-2 mb-6">
+                        <div class="flex items-center text-xs text-gray-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                class="w-4 h-4 mr-2 text-primary">
+                                <path fill-rule="evenodd"
+                                    d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                            Stance width analysis
+                        </div>
+                        <div class="flex items-center text-xs text-gray-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                class="w-4 h-4 mr-2 text-primary">
+                                <path fill-rule="evenodd"
+                                    d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                            Gaze direction check
+                        </div>
+                    </div>
+                    <a href="warrior2.html"
+                        class="block w-full bg-primary hover:bg-primary/80 text-white text-center py-3 rounded-xl font-semibold transition-all">
+                        Start Practice
+                    </a>
+                </div>
+
+                <!-- Adho Mukha Svanasana -->
+                <div class="pose-card bg-gray-800/40 backdrop-blur rounded-2xl p-6 fade-in"
+                    style="animation-delay: 0.7s;">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="badge badge-new">New</span>
+                        <div class="text-4xl">🐕</div>
+                    </div>
+                    <h4 class="text-xl font-bold text-white mb-2">Adho Mukha Svanasana</h4>
+                    <p class="text-sm text-gray-400 mb-4">Downward Dog - Rejuvenation</p>
+                    <div class="space-y-2 mb-6">
+                        <div class="flex items-center text-xs text-gray-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                class="w-4 h-4 mr-2 text-primary">
+                                <path fill-rule="evenodd"
+                                    d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                            Hip elevation tracking
+                        </div>
+                        <div class="flex items-center text-xs text-gray-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                class="w-4 h-4 mr-2 text-primary">
+                                <path fill-rule="evenodd"
+                                    d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                            Spine lengthening
+                        </div>
+                    </div>
+                    <a href="downward-dog.html"
+                        class="block w-full bg-primary hover:bg-primary/80 text-white text-center py-3 rounded-xl font-semibold transition-all">
+                        Start Practice
+                    </a>
+                </div>
+
+                <!-- Bhujangasana -->
+                <div class="pose-card bg-gray-800/40 backdrop-blur rounded-2xl p-6 fade-in"
+                    style="animation-delay: 0.8s;">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="badge badge-new">New</span>
+                        <div class="text-4xl">🐍</div>
+                    </div>
+                    <h4 class="text-xl font-bold text-white mb-2">Bhujangasana</h4>
+                    <p class="text-sm text-gray-400 mb-4">Cobra Pose - Back strengthening</p>
+                    <div class="space-y-2 mb-6">
+                        <div class="flex items-center text-xs text-gray-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                class="w-4 h-4 mr-2 text-primary">
+                                <path fill-rule="evenodd"
+                                    d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                            Chest opening measure
+                        </div>
+                        <div class="flex items-center text-xs text-gray-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                class="w-4 h-4 mr-2 text-primary">
+                                <path fill-rule="evenodd"
+                                    d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                            Elbow positioning
+                        </div>
+                    </div>
+                    <a href="cobra.html"
+                        class="block w-full bg-primary hover:bg-primary/80 text-white text-center py-3 rounded-xl font-semibold transition-all">
+                        Start Practice
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="bg-gray-800/30 backdrop-blur rounded-3xl p-8 md:p-12 border border-gray-700 mb-12 fade-in"
+            style="animation-delay: 0.9s;">
+            <h3 class="text-2xl md:text-3xl font-bold mb-8 text-center text-white">Why Choose SUNDAY?</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-primary/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+                            class="w-8 h-8 text-primary">
+                            <path
+                                d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z M3.75 12a8.25 8.25 0 1 1 16.5 0 8.25 8.25 0 0 1-16.5 0Z" />
+                        </svg>
+                    </div>
+                    <h4 class="text-lg font-bold text-white mb-2">Real-Time AI Analysis</h4>
+                    <p class="text-sm text-gray-400">30 FPS pose detection with instant biomechanical feedback</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-success/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+                            class="w-8 h-8 text-success">
+                            <path fill-rule="evenodd"
+                                d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z"
+                                clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <h4 class="text-lg font-bold text-white mb-2">Precise Corrections</h4>
+                    <p class="text-sm text-gray-400">Priority-based feedback system for optimal learning</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-accent/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+                            class="w-8 h-8 text-accent">
+                            <path fill-rule="evenodd"
+                                d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z"
+                                clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <h4 class="text-lg font-bold text-white mb-2">Track Progress</h4>
+                    <p class="text-sm text-gray-400">Score tracking and performance analytics</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Getting Started -->
+        <section class="text-center fade-in" style="animation-delay: 1s;">
+            <h3 class="text-2xl md:text-3xl font-bold mb-4 text-white">Ready to Begin?</h3>
+            <p class="text-lg text-gray-400 mb-8 max-w-2xl mx-auto">
+                Choose a pose above to start your practice. Each session includes AI-powered feedback, scoring, and
+                personalized corrections.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="tadasana.html"
+                    class="inline-block bg-primary hover:bg-primary/80 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all">
+                    Start with Tadasana
+                </a>
+                <a href="#"
+                    class="inline-block bg-gray-800 hover:bg-gray-700 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all border border-gray-700">
+                    Learn More
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900/80 border-t border-gray-800 mt-20 py-8">
+        <div class="container mx-auto px-4 text-center">
+            <p class="text-gray-400 text-sm mb-2">Built with ❤️ for the yoga community</p>
+            <p class="text-gray-500 text-xs">SUNDAY VR Yoga Platform © 2026</p>
+        </div>
+    </footer>
 </body>
+
 </html>
