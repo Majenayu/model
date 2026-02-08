@@ -1,73 +1,94 @@
 # Tadasana AI Trainer 🧘
 
-Real-time AI-powered Mountain Pose (Tadasana) training application with instant feedback and pose correction.
-
-## Features
-
-- **Real-time Pose Detection**: Uses TensorFlow.js and MoveNet for accurate pose estimation
-- **20-Point Validation System**: Comprehensive biomechanical analysis
-- **Visual Feedback**: Live skeleton overlay on camera feed
-- **Reference Image**: Side-by-side comparison with correct pose
-- **Scoring System**: 0-100% accuracy with detailed corrections
-- **Training History**: Track your progress over time
-- **Priority-Based Corrections**: Critical (🔴), Refinement (🟡), Minor (⚪)
+Real-time AI-powered Mountain Pose (Tadasana) training with instant biomechanical feedback using TensorFlow.js and MoveNet.
 
 ## Live Demo
 
-[Deploy to Render](https://render.com)
+Deploy to Render: [Your App URL]
+
+## Features
+
+- **Real-time Pose Detection**: 30 FPS using Google MoveNet
+- **20-Point Biomechanical Analysis**: Comprehensive Tadasana validation
+- **Visual Feedback**: Live skeleton overlay with color-coded corrections
+- **Priority-Based Corrections**: Critical (🔴) → Refinement (🟡) → Minor (⚪)
+- **Scoring System**: 0-100% accuracy with detailed breakdown
+- **Progress Tracking**: Best score, average, attempts, and time
+- **SUNDAY Design**: Beautiful, responsive UI inspired by SUNDAY platform
 
 ## Quick Start
 
 ### Local Development
 
-1. Clone the repository:
 ```bash
+# Clone repository
 git clone https://github.com/Majenayu/model.git
 cd model
-```
 
-2. Install dependencies:
-```bash
+# Install dependencies
 pip install -r requirements.txt
-```
 
-3. Run the server:
-```bash
+# Run server
 python server.py
 ```
 
-4. Open browser at `http://localhost:5000`
+Open `http://localhost:5000`
 
 ### Deploy to Render
 
-1. Fork this repository
-2. Create new Web Service on Render
-3. Connect your GitHub repository
-4. Render will auto-detect settings from `Procfile`
+1. Push to GitHub
+2. Create new Web Service on [Render](https://render.com)
+3. Connect repository: `Majenayu/model`
+4. Render auto-detects settings from `Procfile`
 5. Deploy!
 
 ## How It Works
 
-### Pose Detection
-- Uses Google's MoveNet SinglePose Lightning model
-- Detects 17 body keypoints in real-time
-- Runs entirely in the browser (client-side)
+### Pose Detection Pipeline
+```
+Camera → MoveNet Model → 17 Keypoints → Angle Calculation → 
+Validation Logic → Priority-Based Feedback → Visual Overlay
+```
 
-### Tadasana Analysis
-The app validates 10 key aspects of Mountain Pose:
+### 20-Point Tadasana Validation
 
-1. **Foot Spacing**: Hip-width apart
-2. **Weight Distribution**: Even on both feet
-3. **Knee Alignment**: Straight but not locked (165-190°)
-4. **Hip Level**: Balanced left and right
-5. **Spinal Alignment**: Shoulders over hips
-6. **Shoulder Position**: Level and relaxed
-7. **Arm Placement**: Straight by sides
-8. **Head Alignment**: Over shoulders
-9. **Chest Opening**: Broadened collarbones
-10. **Core Engagement**: Lengthened spine
+**Foundation (Priority 1-3)**
+- Foot spacing (hip-width)
+- Weight distribution
+- Foot parallel alignment
 
-### Scoring System
+**Legs (Priority 1-3)**
+- Quadriceps engagement
+- Knee straightness (165-190°)
+- Knee tracking over ankles
+
+**Pelvis & Core (Priority 1-2)**
+- Hip level alignment
+- Pelvic positioning
+- Core engagement
+
+**Spine & Torso (Priority 1-3)**
+- Spinal alignment (shoulders over hips)
+- Chest opening
+- Rib cage positioning
+
+**Shoulders (Priority 2-3)**
+- Shoulder level and relaxation
+- Shoulder blade engagement
+- Collarbone broadening
+
+**Arms (Priority 3-4)**
+- Natural arm positioning
+- Energy flow through fingertips
+- Hand placement by sides
+
+**Head & Neck (Priority 1-3)**
+- Head alignment over shoulders
+- Neck length and crown reach
+- Jaw relaxation
+
+### Scoring Algorithm
+
 - **90-100%**: Perfect alignment ✨
 - **75-89%**: Excellent - minor refinements
 - **60-74%**: Good - focus on adjustments
@@ -76,21 +97,21 @@ The app validates 10 key aspects of Mountain Pose:
 ## Technology Stack
 
 - **Frontend**: HTML5, Tailwind CSS, Vanilla JavaScript
-- **ML**: TensorFlow.js, MoveNet Pose Detection
+- **ML**: TensorFlow.js 3.13.0, MoveNet SinglePose Lightning
 - **Backend**: Flask (Python)
-- **Deployment**: Render
+- **Deployment**: Render (Gunicorn)
 
 ## Project Structure
 
 ```
 model/
-├── index.html          # Main application UI
+├── index.html          # Main UI (SUNDAY-inspired design)
 ├── app.js              # Pose detection & analysis logic
 ├── server.py           # Flask backend
 ├── requirements.txt    # Python dependencies
-├── Procfile           # Render deployment config
+├── Procfile           # Render deployment
 ├── runtime.txt        # Python version
-├── training_data.json # Session history (auto-generated)
+├── .gitignore         # Git exclusions
 └── README.md          # This file
 ```
 
@@ -99,7 +120,7 @@ model/
 - `GET /` - Main application
 - `POST /api/save-session` - Save training session
 - `GET /api/get-history` - Get training history
-- `GET /api/stats` - Get overall statistics
+- `GET /api/stats` - Get aggregated statistics
 
 ## Training Tips
 
@@ -111,40 +132,69 @@ model/
 
 ## Customization
 
-### Add Reference Image
-Replace the placeholder in `index.html`:
-```html
-<img src="your-tadasana-image.jpg" alt="Tadasana Reference">
+### Adjust Sensitivity
+Edit `app.js`:
+```javascript
+const MIN_CONFIDENCE = 0.3;  // Keypoint confidence threshold
+const angleThreshold = 165;   // Knee straightness threshold
 ```
 
-### Adjust Sensitivity
-Modify thresholds in `app.js`:
+### Change Scoring Weights
+Modify penalty values in `analyzeTadasana()`:
 ```javascript
-const minConfidence = 0.3;  // Keypoint confidence
-const angleThreshold = 165; // Knee straightness
+corrections.push({ 
+  priority: 1, 
+  message: 'Your message', 
+  penalty: 10  // Adjust this
+});
 ```
 
 ## Browser Compatibility
 
-- Chrome/Edge: ✅ Recommended
-- Firefox: ✅ Supported
-- Safari: ✅ Supported (iOS 14.5+)
+| Browser | Desktop | Mobile |
+|---------|---------|--------|
+| Chrome  | ✅      | ✅     |
+| Edge    | ✅      | ✅     |
+| Firefox | ✅      | ✅     |
+| Safari  | ✅      | ✅ (iOS 14.5+) |
+
+## Troubleshooting
+
+### Camera Not Working
+- Check browser permissions
+- Ensure HTTPS (automatic on Render)
+- Try Chrome/Edge for best compatibility
+
+### Low Accuracy Scores
+- Improve lighting
+- Stand further from camera
+- Ensure full body visible
+- Wear fitted clothing
+
+### Deployment Failed
+- Check Render build logs
+- Verify `Procfile`: `web: python -m gunicorn server:app --bind 0.0.0.0:$PORT`
+- Ensure all dependencies in `requirements.txt`
 
 ## License
 
-MIT License - feel free to use for your own training!
+MIT License - Free for personal and commercial use
+
+## Credits
+
+- **TensorFlow.js**: Google Brain Team
+- **MoveNet**: Google Research
+- **Design Inspiration**: SUNDAY Yoga Platform
+- **Tailwind CSS**: Tailwind Labs
 
 ## Author
 
 **Majenayu**
 - GitHub: [@Majenayu](https://github.com/Majenayu)
-
-## Acknowledgments
-
-- TensorFlow.js team for pose detection models
-- Google MoveNet for fast pose estimation
-- Yoga community for pose guidance
+- Repository: [model](https://github.com/Majenayu/model)
 
 ---
 
 **Namaste** 🙏
+
+*Built with ❤️ for the yoga community*

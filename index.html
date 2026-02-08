@@ -2,90 +2,154 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tadasana AI Trainer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tadasana AI Trainer - SUNDAY</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.13.0"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.0.0"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#42A5F5',
+                        'secondary': '#1976D2',
+                        'accent': '#FFEB3B',
+                        'background': '#121212',
+                        'card': '#1E1E1E'
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .video-container { position: relative; }
-        canvas { position: absolute; top: 0; left: 0; }
+        body {
+            background-color: #0c0e12;
+            background-image:
+                radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.1) 0, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.1) 0, transparent 50%);
+        }
+        .video-container { position: relative; padding-top: 75%; background: #000; border-radius: 1rem; overflow: hidden; }
+        #video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        #canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1); }
+        .card-effect {
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .card-effect:hover {
+            transform: translateY(-8px) scale(1.02);
+            border-color: rgba(66, 165, 245, 0.4);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+        }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4">
-    <div class="max-w-7xl w-full bg-white rounded-2xl shadow-2xl p-8">
-        <h1 class="text-4xl font-bold text-center mb-2 text-gray-800">🧘 Tadasana AI Trainer</h1>
-        <p class="text-center text-gray-600 mb-8">Real-time Mountain Pose Analysis & Feedback</p>
-        
-        <div class="grid md:grid-cols-2 gap-8">
-            <!-- Reference Image -->
-            <div class="space-y-4">
-                <h2 class="text-2xl font-semibold text-gray-700">📸 Reference Pose</h2>
-                <div class="bg-gray-100 rounded-lg p-4">
-                    <img id="referenceImage" src="tadasana-reference.jpg" alt="Tadasana Reference" 
-                         class="w-full rounded-lg shadow-md" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22600%22%3E%3Crect fill=%22%23e5e7eb%22 width=%22400%22 height=%22600%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 fill=%22%239ca3af%22 font-size=%2224%22%3ETadasana Reference%3C/text%3E%3C/svg%3E'">
+<body class="min-h-screen text-gray-200 p-4">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <header class="flex items-center justify-between mb-8 pb-6 border-b border-gray-800">
+            <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 bg-primary/20 rounded-2xl flex items-center justify-center p-1.5">
+                    <span class="text-3xl">🧘</span>
                 </div>
-                <div class="bg-blue-50 p-4 rounded-lg">
-                    <h3 class="font-semibold text-blue-900 mb-2">Key Points:</h3>
-                    <ul class="text-sm text-blue-800 space-y-1">
-                        <li>✓ Feet hip-width apart</li>
+                <div>
+                    <h1 class="text-4xl font-black text-primary tracking-tighter uppercase italic">TADASANA</h1>
+                    <p class="text-gray-500 font-medium text-xs uppercase tracking-widest">AI Trainer</p>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="grid lg:grid-cols-2 gap-8 mb-8">
+            <!-- Reference Section -->
+            <div class="space-y-4">
+                <h2 class="text-2xl font-bold text-white">📸 Reference Pose</h2>
+                <div class="bg-card rounded-xl p-4 card-effect">
+                    <img id="referenceImage" src="tadasana-reference.jpg" alt="Tadasana Reference" 
+                         class="w-full rounded-lg" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22600%22%3E%3Crect fill=%22%231E1E1E%22 width=%22400%22 height=%22600%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 fill=%22%2342A5F5%22 font-size=%2224%22%3ETadasana%3C/text%3E%3Ctext x=%2250%25%22 y=%2255%25%22 text-anchor=%22middle%22 fill=%22%239ca3af%22 font-size=%2216%22%3EMountain Pose%3C/text%3E%3C/svg%3E'">
+                </div>
+                <div class="bg-primary/10 border border-primary/20 p-4 rounded-xl">
+                    <h3 class="font-bold text-primary mb-2">Key Alignment Points:</h3>
+                    <ul class="text-sm text-gray-300 space-y-1">
+                        <li>✓ Feet hip-width apart, parallel</li>
                         <li>✓ Weight evenly distributed</li>
-                        <li>✓ Knees straight but not locked</li>
-                        <li>✓ Shoulders over hips</li>
+                        <li>✓ Knees straight but not locked (165-190°)</li>
+                        <li>✓ Hips level, pelvis neutral</li>
+                        <li>✓ Shoulders directly over hips</li>
                         <li>✓ Arms relaxed by sides</li>
                         <li>✓ Head aligned over shoulders</li>
+                        <li>✓ Crown reaching upward</li>
                     </ul>
                 </div>
             </div>
 
-            <!-- Live Camera Feed -->
+            <!-- Camera Feed -->
             <div class="space-y-4">
-                <h2 class="text-2xl font-semibold text-gray-700">📹 Your Pose</h2>
-                <div class="video-container bg-black rounded-lg overflow-hidden">
-                    <video id="video" width="640" height="480" autoplay class="w-full"></video>
+                <h2 class="text-2xl font-bold text-white">📹 Live Analysis</h2>
+                <div class="video-container">
+                    <video id="video" width="640" height="480" autoplay playsinline></video>
                     <canvas id="canvas" width="640" height="480"></canvas>
+                    <div id="camera-status" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-900/90 hidden">
+                        <div class="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mb-3"></div>
+                        <p id="status-text" class="text-gray-400">Loading...</p>
+                    </div>
                 </div>
-                <button id="startBtn" class="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:from-purple-700 hover:to-blue-700 transition">
-                    Start Camera
+                <button id="startBtn" class="w-full bg-gradient-to-r from-primary to-secondary text-white py-3 px-6 rounded-xl font-bold hover:shadow-lg transition">
+                    Start Camera & Analysis
                 </button>
             </div>
         </div>
 
-        <!-- Feedback Section -->
-        <div class="mt-8 grid md:grid-cols-3 gap-4">
-            <div class="bg-gradient-to-br from-green-400 to-green-600 p-6 rounded-lg text-white">
-                <h3 class="text-lg font-semibold mb-2">Accuracy Score</h3>
-                <p id="score" class="text-5xl font-bold">0%</p>
+        <!-- Feedback Cards -->
+        <div class="grid md:grid-cols-3 gap-4 mb-8">
+            <div class="bg-gradient-to-br from-green-500 to-green-600 p-6 rounded-xl text-white card-effect">
+                <h3 class="text-sm font-semibold mb-2 opacity-90">Accuracy Score</h3>
+                <p id="score" class="text-5xl font-black">0%</p>
             </div>
-            <div class="bg-gradient-to-br from-yellow-400 to-orange-500 p-6 rounded-lg text-white">
-                <h3 class="text-lg font-semibold mb-2">Status</h3>
-                <p id="status" class="text-2xl font-bold">Not Started</p>
+            <div class="bg-gradient-to-br from-accent to-orange-500 p-6 rounded-xl text-gray-900 card-effect">
+                <h3 class="text-sm font-semibold mb-2 opacity-90">Status</h3>
+                <p id="status" class="text-2xl font-black">Not Started</p>
             </div>
-            <div class="bg-gradient-to-br from-blue-400 to-indigo-600 p-6 rounded-lg text-white">
-                <h3 class="text-lg font-semibold mb-2">Pose Time</h3>
-                <p id="timer" class="text-5xl font-bold">0s</p>
+            <div class="bg-gradient-to-br from-primary to-indigo-600 p-6 rounded-xl text-white card-effect">
+                <h3 class="text-sm font-semibold mb-2 opacity-90">Pose Time</h3>
+                <p id="timer" class="text-5xl font-black">0s</p>
             </div>
         </div>
 
         <!-- Real-time Corrections -->
-        <div class="mt-6 bg-gray-50 p-6 rounded-lg">
-            <h3 class="text-xl font-semibold text-gray-800 mb-4">🎯 Real-time Corrections</h3>
-            <div id="corrections" class="space-y-2 text-gray-700">
-                <p class="text-gray-500 italic">Stand in frame to receive feedback...</p>
+        <div class="bg-card p-6 rounded-xl border border-gray-700 mb-8 card-effect">
+            <h3 class="text-xl font-bold text-primary mb-4">🎯 Real-time Corrections</h3>
+            <div id="corrections" class="space-y-2 text-gray-300 min-h-[100px]">
+                <p class="text-gray-500 italic">Stand in frame to receive AI-powered feedback...</p>
             </div>
         </div>
 
-        <!-- Training History -->
-        <div class="mt-6 bg-gray-50 p-6 rounded-lg">
-            <h3 class="text-xl font-semibold text-gray-800 mb-4">📊 Training Session</h3>
-            <div id="history" class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                <div><span class="text-gray-600">Best Score:</span> <span id="bestScore" class="font-bold text-green-600">0%</span></div>
-                <div><span class="text-gray-600">Attempts:</span> <span id="attempts" class="font-bold text-blue-600">0</span></div>
-                <div><span class="text-gray-600">Avg Score:</span> <span id="avgScore" class="font-bold text-purple-600">0%</span></div>
-                <div><span class="text-gray-600">Total Time:</span> <span id="totalTime" class="font-bold text-orange-600">0s</span></div>
+        <!-- Training Stats -->
+        <div class="bg-card p-6 rounded-xl border border-gray-700 card-effect">
+            <h3 class="text-xl font-bold text-primary mb-4">📊 Training Session Stats</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div class="bg-gray-800/50 p-4 rounded-lg">
+                    <p class="text-xs text-gray-500 uppercase mb-1">Best Score</p>
+                    <p id="bestScore" class="text-2xl font-bold text-green-400">0%</p>
+                </div>
+                <div class="bg-gray-800/50 p-4 rounded-lg">
+                    <p class="text-xs text-gray-500 uppercase mb-1">Attempts</p>
+                    <p id="attempts" class="text-2xl font-bold text-blue-400">0</p>
+                </div>
+                <div class="bg-gray-800/50 p-4 rounded-lg">
+                    <p class="text-xs text-gray-500 uppercase mb-1">Avg Score</p>
+                    <p id="avgScore" class="text-2xl font-bold text-purple-400">0%</p>
+                </div>
+                <div class="bg-gray-800/50 p-4 rounded-lg">
+                    <p class="text-xs text-gray-500 uppercase mb-1">Total Time</p>
+                    <p id="totalTime" class="text-2xl font-bold text-orange-400">0s</p>
+                </div>
             </div>
         </div>
+
+        <!-- Footer -->
+        <footer class="mt-8 text-center text-gray-500 text-sm">
+            <p>Powered by TensorFlow.js & MoveNet | SUNDAY Platform</p>
+        </footer>
     </div>
 
     <script src="app.js"></script>
