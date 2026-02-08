@@ -17,6 +17,7 @@ let sessionData = {
 // TTS State
 let ttsEnabled = false;
 let isSpeaking = false;
+let currentSpeechMessage = null;
 
 // Pose Analysis Variables
 let suggestionBuffer = [];
@@ -26,6 +27,7 @@ let correctionCounter = 0;
 let scoreHistory = [];
 let poseScore = 100;
 let correctionHistory = [];
+let lastPerfectTime = 0;
 
 // MoveNet Configuration
 const keypointIndices = {
@@ -171,7 +173,14 @@ async function poseDetectionFrame(video, ctx, detector) {
             // Stabilized feedback
             correctionCounter++;
             if (correctionCounter >= BUFFER_SIZE) {
-                stableSuggestion = corrections.length > 0 ? corrections[0] : { message: "Perfect Tadasana! Hold this pose.", color: 'green' };
+                const now = Date.now();
+                if (corrections.length > 0) {
+                    stableSuggestion = corrections[0];
+                    lastPerfectTime = 0;
+                } else {
+                    stableSuggestion = { message: "Perfect Tadasana! Hold this pose.", color: 'green' };
+                    if (lastPerfectTime === 0) lastPerfectTime = now;
+                }
                 correctionCounter = 0;
             }
 
@@ -189,11 +198,17 @@ async function poseDetectionFrame(video, ctx, detector) {
             updateScore(poseScore);
             updateStatus(poseScore);
 
-            // Log corrections periodically
-            if (correctionCounter % 200 === 0) {
-                logCorrections(corrections);
-                if (ttsEnabled && corrections.length > 0) {
-                    speakCorrection(corrections[0].message);
+            // Intelligent TTS Triggering
+            if (correctionCounter % 60 === 0) {
+                if (stableSuggestion) {
+                    const isError = stableSuggestion.color === 'red' || stableSuggestion.color === 'yellow';
+                    const isPerfect = stableSuggestion.color === 'green';
+                    
+                    if (isError) {
+                        speakCorrection(stableSuggestion.message, true);
+                    } else if (isPerfect && (Date.now() - lastPerfectTime < 2000)) {
+                        speakCorrection(stableSuggestion.message, false);
+                    }
                 }
             }
 
@@ -638,32 +653,38 @@ function toggleTTS() {
 }
 
 function speakCorrection(message, force = false) {
-    if (!('speechSynthesis' in window)) {
-        console.warn('Text-to-Speech not supported');
-        return;
-    }
-    
-    if (!force && (isSpeaking || window.speechSynthesis.speaking)) {
-        return;
-    }
-    
-    if (force) {
+    if (!('speechSynthesis' in window) || !ttsEnabled) return;
+
+    // If it's a new error, interrupt the "Perfect" message
+    if (force && window.speechSynthesis.speaking && message !== currentSpeechMessage) {
         window.speechSynthesis.cancel();
     }
-    
+
+    // Don't repeat the same message if already speaking
+    if (message === currentSpeechMessage && (isSpeaking || window.speechSynthesis.speaking)) return;
+
     const utterance = new SpeechSynthesisUtterance(message);
-    utterance.rate = 0.9;
+    utterance.rate = 1.1; 
     utterance.pitch = 1.0;
     utterance.volume = 1.0;
     utterance.lang = 'en-US';
     
-    utterance.onstart = () => { isSpeaking = true; };
-    utterance.onend = () => { isSpeaking = false; };
+    utterance.onstart = () => {
+        isSpeaking = true;
+        currentSpeechMessage = message;
+    };
+    
+    utterance.onend = () => {
+        isSpeaking = false;
+        currentSpeechMessage = null;
+    };
+
     utterance.onerror = (event) => {
         console.error('TTS Error:', event);
         isSpeaking = false;
+        currentSpeechMessage = null;
     };
-    
+
     window.speechSynthesis.speak(utterance);
 }
 
