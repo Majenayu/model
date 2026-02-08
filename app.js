@@ -262,14 +262,38 @@ function checkTadasana(keypoints) {
     if (leftHip && leftKnee && leftAnkle) {
         const leftKneeAngle = calculateAngle(leftHip, leftKnee, leftAnkle);
         if (leftKneeAngle < 165) {
-            corrections.push({ message: `🔴 Left leg: engage quadriceps, straighten knee (${Math.round(leftKneeAngle)}°)`, affected: ['left_hip', 'left_knee', 'left_ankle'], color: 'red', priority: 1 });
+            corrections.push({ message: `🔴 Legs: straighten your knees`, affected: ['left_hip', 'left_knee', 'left_ankle'], color: 'red', priority: 1 });
         }
     }
 
     if (rightHip && rightKnee && rightAnkle) {
         const rightKneeAngle = calculateAngle(rightHip, rightKnee, rightAnkle);
         if (rightKneeAngle < 165) {
-            corrections.push({ message: `🔴 Right leg: engage quadriceps, straighten knee (${Math.round(rightKneeAngle)}°)`, affected: ['right_hip', 'right_knee', 'right_ankle'], color: 'red', priority: 1 });
+            corrections.push({ message: `🔴 Legs: straighten your knees`, affected: ['right_hip', 'right_knee', 'right_ankle'], color: 'red', priority: 1 });
+        }
+    }
+
+    // 4. Arms overhead (Interlocked fingers)
+    if (leftShoulder && leftElbow && leftWrist && rightShoulder && rightElbow && rightWrist) {
+        const leftArmAngle = calculateAngle(leftShoulder, leftElbow, leftWrist);
+        const rightArmAngle = calculateAngle(rightShoulder, rightElbow, rightWrist);
+        
+        // Check if wrists are above head
+        if (leftWrist.y > leftShoulder.y || rightWrist.y > rightShoulder.y) {
+            corrections.push({ message: "🔴 Arms: reach high above your head", affected: ['left_wrist', 'right_wrist', 'left_elbow', 'right_elbow'], color: 'red', priority: 1 });
+        } else {
+            if (leftArmAngle < 160) {
+                corrections.push({ message: "🔴 Arms: straighten your left elbow", affected: ['left_shoulder', 'left_elbow', 'left_wrist'], color: 'red', priority: 1 });
+            }
+            if (rightArmAngle < 160) {
+                corrections.push({ message: "🔴 Arms: straighten your right elbow", affected: ['right_shoulder', 'right_elbow', 'right_wrist'], color: 'red', priority: 1 });
+            }
+            
+            // Check if hands are close together (interlocked)
+            const handDist = Math.abs(leftWrist.x - rightWrist.x);
+            if (handDist > 60) {
+                corrections.push({ message: "🟡 Hands: interlock fingers and turn palms up", affected: ['left_wrist', 'right_wrist'], color: 'yellow', priority: 2 });
+            }
         }
     }
 
