@@ -46,3 +46,14 @@ This is an actively evolving project. Production hardening, observability, rate 
 ## License
 
 See the repository license file and package metadata for the authoritative terms.
+## Implementation notes
+
+`server.py` serves the browser experience; pose-specific HTML pages and reference images remain repository assets, while `app.js` supplies client-side interaction. `Procfile`, `start.sh`, and `start.bat` describe alternate launch environments. This repository does not contain a documented trained-model artifact or inference API; the name should not be read as a clinical pose-classification guarantee.
+
+### Verification
+
+Install `requirements.txt`, start `python server.py`, and check every linked pose page, image path, responsive layout, and server error response. No automated test command is configured.
+
+### License status
+
+No dedicated license file is present in the inspected tree; license terms are unspecified.
