@@ -13,3 +13,8 @@ training_data.json
 .pythonlibs/
 .upm/
 .cache/
+
+.env.*
+!.env.example
+instance/
+.coverage
